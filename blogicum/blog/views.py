@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic import UpdateView
 
-from blog.constants import QUANTITY_OF_LAST_PUB
 from blog.models import Category, Post, User, Comment
 
 from .forms import PostForm, CommentPostForm
@@ -18,7 +17,6 @@ from core.utils import post_published_query
 
 def index(request):
     """Главгая страниц."""
-
     paginator = Paginator(post_published_query(), 10)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -88,8 +86,8 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
 
 def category_posts(request, category_slug):
     """Страница публикаций в выбранной категории."""
-    category = get_object_or_404(Category, 
-                                 is_published=True, 
+    category = get_object_or_404(Category,
+                                 is_published=True,
                                  slug=category_slug)
     paginator = Paginator(post_published_query().filter(category=category), 10)
     page_number = request.GET.get("page")
