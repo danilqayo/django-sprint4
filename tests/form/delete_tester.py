@@ -87,9 +87,7 @@ class DeleteTester(BaseTester):
             AuthorisedSubmitTester(
                 tester=self,
                 test_response_cbk=(
-                    AuthorisedSubmitTester.get_test_response_ok_cbk(
-                        tester=self
-                    )
+                    AuthorisedSubmitTester.get_test_response_ok_cbk(tester=self)
                 ),
             ),
             delete_url_addr,
@@ -123,8 +121,8 @@ class DeleteTester(BaseTester):
                     "удаления комментария возникло исключение: "
                     f"{error}"
                 )
-            if 'form' in get_response.context:
-                assert isinstance(get_response.context['form'], Form), (
+            if "form" in get_response.context:
+                assert isinstance(get_response.context["form"], Form), (
                     "Убедитесь, что на страницу удаления комментария не "
                     "передается форма, которая используются для создания "
                     "комментария. При использовании класса `DeleteVeiw` из "
