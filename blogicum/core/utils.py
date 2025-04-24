@@ -13,6 +13,7 @@ def post_all_query():
             "location",
             "author",
         )
+        .prefetch_related("comments")
         .annotate(comment_count=Count("comments"))
         .order_by("-pub_date")
     )
@@ -27,26 +28,3 @@ def post_published_query():
         category__is_published=True,
     )
     return query_set
-
-
-def get_post_data(post_data):
-    """Вернуть данные поста.
-
-    Ограничивает возможность авторов писать и редактировать комментарии
-    к постам снятым с публикации, постам в категориях снятых с публикации,
-    постам дата публикации которых больше текущей даты.
-    Проверяет:
-        - Пост опубликован.
-        - Категория в которой находится поста опубликована.
-        - Дата поста не больше текущей даты.
-
-    Возвращает: Объект или 404
-    """
-    post = get_object_or_404(
-        Post,
-        pk=post_data["pk"],
-        pub_date__lte=timezone.now(),
-        is_published=True,
-        category__is_published=True,
-    )
-    return post

@@ -5,21 +5,19 @@ from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.generic import UpdateView
 
-from blog.models import Category, Post, User, Comment
-
-from .forms import PostForm, CommentPostForm
-from core.utils import post_all_query
-
-from core.utils import post_published_query
+from blog.forms import CommentPostForm, PostForm
+from blog.mixins import AuthorPostAccessMixin
+from blog.models import Category, Comment, Post, User
+from blog.service import get_paginated_items
+from core.utils import post_all_query, post_published_query
 
 
 def index(request):
     """Главгая страниц."""
-    paginator = Paginator(post_published_query(), 10)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    page_obj = get_paginated_items(request, post_published_query())
 
     context = {"page_obj": page_obj}
 
@@ -29,8 +27,11 @@ def index(request):
 def post_detail(request, pk):
     """Подробное описание поста."""
     detail = get_object_or_404(post_all_query(), pk=pk)
-    if not detail.is_published and request.user != detail.author:
-        raise Http404("Пост больше не доступен")
+
+    if request.user != detail.author:
+        if not detail.is_published or timezone.now() < detail.pub_date:
+            raise Http404("Пост больше не доступен")
+
     form = CommentPostForm()
     context = {"post": detail, "form": form, "comments": detail.comments.all()}
 
@@ -44,12 +45,11 @@ def create_post(request):
         files=request.FILES or None,
     )
 
-    if request.method == "POST":
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect("blog:profile", username=request.user.username)
+    if form.is_valid():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        return redirect("blog:profile", username=request.user.username)
 
     return render(request, "blog/create.html", {"form": form})
 
@@ -69,15 +69,10 @@ def delete_post(request, pk):
     return render(request, "blog/create.html", {"form": form})
 
 
-class PostUpdateView(LoginRequiredMixin, UpdateView):
+class PostUpdateView(LoginRequiredMixin, AuthorPostAccessMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = "blog/create.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        if self.get_object().author != request.user:
-            return redirect("blog:post_detail", pk=self.kwargs["pk"])
-        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         pk = self.kwargs["pk"]
@@ -86,12 +81,11 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
 
 def category_posts(request, category_slug):
     """Страница публикаций в выбранной категории."""
-    category = get_object_or_404(Category,
-                                 is_published=True,
-                                 slug=category_slug)
-    paginator = Paginator(post_published_query().filter(category=category), 10)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    category = get_object_or_404(Category, is_published=True, slug=category_slug)
+
+    page_obj = get_paginated_items(
+        request, post_published_query().filter(category=category)
+    )
 
     context = {"category": category, "page_obj": page_obj}
     return render(request, "blog/category.html", context)
@@ -100,9 +94,12 @@ def category_posts(request, category_slug):
 def user_profile(request, username):
     profile = get_object_or_404(User, username=username)
 
-    paginator = Paginator(post_all_query().filter(author=profile), 10)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    if request.user != profile:
+        query = post_published_query()
+    else:
+        query = post_all_query()
+
+    page_obj = get_paginated_items(request, query.filter(author=profile))
 
     context = {
         "profile": profile,

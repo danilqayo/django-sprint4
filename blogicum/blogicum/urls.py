@@ -1,12 +1,12 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import include, path, reverse_lazy
 from django.views.generic.edit import CreateView
-from django.conf.urls.static import static
-from django.conf import settings
 
-handler404 = "core.views.page_not_found"
-handler500 = "core.views.page_failure"
+handler404 = "pages.views.page_not_found"
+handler500 = "pages.views.server_error"
 
 urlpatterns = [
     path("pages/", include("pages.urls", namespace="pages")),
@@ -22,4 +22,7 @@ urlpatterns = [
         name="registration",
     ),
     path("", include("blog.urls", namespace="blog")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

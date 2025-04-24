@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from blog.constants import MAX_LENGHT
+from blog.constants import MAX_LENGHT, MAX_LENGHT_REPRESENT
 from core.models import IsPubCreateAtModel
 
 User = get_user_model()
@@ -24,7 +24,7 @@ class Category(IsPubCreateAtModel):
         verbose_name_plural = "Категории"
 
     def __str__(self):
-        return self.title
+        return self.title[:MAX_LENGHT_REPRESENT]
 
 
 class Location(IsPubCreateAtModel):
@@ -35,7 +35,7 @@ class Location(IsPubCreateAtModel):
         verbose_name_plural = "Местоположения"
 
     def __str__(self):
-        return self.name
+        return self.name[:MAX_LENGHT_REPRESENT]
 
 
 class Post(IsPubCreateAtModel):
@@ -51,7 +51,6 @@ class Post(IsPubCreateAtModel):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="posts",
         verbose_name="Автор публикации",
     )
 
@@ -60,16 +59,15 @@ class Post(IsPubCreateAtModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="posts",
         verbose_name="Местоположение",
     )
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
         null=True,
-        related_name="posts",
         verbose_name="Категория",
     )
+
     image = models.ImageField(
         verbose_name="изображение", upload_to="blog_images/", blank=True
     )
@@ -78,9 +76,10 @@ class Post(IsPubCreateAtModel):
         verbose_name = "публикация"
         verbose_name_plural = "Публикации"
         ordering = ["-pub_date"]
+        default_related_name = "posts"
 
     def __str__(self):
-        return self.title
+        return self.title[:MAX_LENGHT_REPRESENT]
 
 
 class Comment(models.Model):
@@ -111,4 +110,7 @@ class Comment(models.Model):
         ordering = ("created_at",)
 
     def __str__(self):
-        return self.author
+        return (
+            f"Комментарий автора {self.author} к посту {self.post} "
+            f"текст: {self.text[:MAX_LENGHT_REPRESENT]}"
+        )
