@@ -31,7 +31,7 @@ urlpatterns = [
     ),
     path("posts/create/", views.create_post, name="create_post"),
     path("category/<slug:category_slug>/",
-         views.category_posts, 
+         views.category_posts,
          name="category_posts"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
     path("profile/<str:username>/", views.user_profile, name="profile"),
