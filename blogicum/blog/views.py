@@ -87,7 +87,9 @@ class PostUpdateView(LoginRequiredMixin, AuthorPostAccessMixin, UpdateView):
 
 def category_posts(request, category_slug):
     """Страница публикаций в выбранной категории."""
-    category = get_object_or_404(Category, is_published=True, slug=category_slug)
+    category = get_object_or_404(Category,
+                                 is_published=True,
+                                 slug=category_slug)
 
     page_obj = get_paginated_items(
         request, post_published_query().filter(category=category)
