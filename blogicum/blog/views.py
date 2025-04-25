@@ -28,11 +28,18 @@ def post_detail(request, pk):
     detail = get_object_or_404(post_all_query(), pk=pk)
 
     if request.user != detail.author:
-        if not detail.is_published or timezone.now() < detail.pub_date:
+        if (
+            not detail.is_published or not detail.category.is_published
+            or timezone.now() < detail.pub_date
+        ):
             raise Http404("Пост больше не доступен")
 
     form = CommentPostForm()
-    context = {"post": detail, "form": form, "comments": detail.comments.all()}
+    context = {
+        "post": detail,
+        "form": form,
+        "comments": detail.comments.select_related("author").all(),
+    }
 
     return render(request, "blog/detail.html", context)
 
@@ -80,9 +87,7 @@ class PostUpdateView(LoginRequiredMixin, AuthorPostAccessMixin, UpdateView):
 
 def category_posts(request, category_slug):
     """Страница публикаций в выбранной категории."""
-    category = get_object_or_404(Category,
-                                 is_published=True,
-                                 slug=category_slug)
+    category = get_object_or_404(Category, is_published=True, slug=category_slug)
 
     page_obj = get_paginated_items(
         request, post_published_query().filter(category=category)
